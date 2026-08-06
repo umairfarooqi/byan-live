@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // GitHub Pages project site is served from /live-byan/
+    base: process.env["GITHUB_ACTIONS"] ? "/live-byan/" : "/",
+  },
 });
