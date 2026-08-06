@@ -197,7 +197,11 @@ function ListenerPage() {
   }, [displayTitle, playing, toggle]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-background px-6 py-16">
+    <main className="relative flex min-h-screen flex-col items-center justify-center gap-10 bg-background px-6 py-16">
+      <p className="absolute inset-x-0 top-0 px-6 py-4 text-center text-sm font-medium leading-relaxed text-coral">
+        Never leave this screen off and never open another app. Screen band na karein aur koi
+        doosri app open na karein.
+      </p>
       <WaveformCircle active={live && playing} amplitude={playing ? amplitude : null} />
       <h1 className="text-center text-4xl font-bold tracking-tight text-navy sm:text-5xl">
         {displayTitle}
