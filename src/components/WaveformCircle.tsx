@@ -51,7 +51,7 @@ export function WaveformCircle({ amplitude = null, active }: Props) {
             ? 0.5 + 0.5 * Math.sin(phase * 4 + i * 0.55) * (0.35 + level)
             : 0.18;
           const len = MIN_LEN + (MAX_LEN - MIN_LEN) * Math.min(1, wobble * (0.6 + level));
-          const r = (n: number) => Math.round(n * 100) / 100;
+          const r = (n: number) => n.toFixed(2);
           const x1 = r(CENTER + Math.cos(angle) * RADIUS);
           const y1 = r(CENTER + Math.sin(angle) * RADIUS);
           const x2 = r(CENTER + Math.cos(angle) * (RADIUS + len));
