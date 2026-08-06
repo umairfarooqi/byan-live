@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Room, RoomEvent } from "livekit-client";
+import { Room, RoomEvent, Track } from "livekit-client";
 import { StatusDot } from "@/components/StatusDot";
 import { WaveformCircle } from "@/components/WaveformCircle";
 import { useWakeLock } from "@/hooks/use-wake-lock";
@@ -66,7 +66,10 @@ function Console() {
   const [title, setTitle] = useState("");
   const [live, setLive] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const roomRef = useRef<Room | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useWakeLock(live);
 
@@ -104,8 +107,55 @@ function Console() {
     setStatus(null);
   };
 
+  // Local-only recording of the admin's own mic via MediaRecorder. Nothing is uploaded.
+  const startRecording = () => {
+    const room = roomRef.current;
+    const micTrack = room?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+      ?.mediaStreamTrack;
+    if (!micTrack) {
+      setStatus("Go live first — no microphone track to record");
+      return;
+    }
+    try {
+      const recorder = new MediaRecorder(new MediaStream([micTrack]));
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${(title || "session").replace(/[^\w-]+/g, "-")}-${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        chunksRef.current = [];
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+      setStatus(null);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Recording not supported on this browser");
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  };
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center gap-8 bg-background px-6 py-12">
+      <p className="w-full text-center text-sm font-medium leading-relaxed text-coral">
+        Never leave this screen off and never open another app. Screen band na karein aur koi
+        doosri app open na karein.
+      </p>
+
       <div className="w-full rounded-xl border-2 border-coral bg-coral/10 px-5 py-4 text-sm font-medium leading-relaxed text-navy">
         Keep this browser tab open and on-screen the entire time you&apos;re broadcasting.
         Switching apps or letting the screen lock will cut the stream. Keep your phone plugged in
@@ -137,8 +187,26 @@ function Console() {
         </button>
       )}
 
+      {!recording ? (
+        <button
+          onClick={startRecording}
+          disabled={!live}
+          className="w-full rounded-xl border-2 border-navy py-4 text-lg font-semibold text-navy transition-colors hover:bg-navy/10 disabled:opacity-40"
+        >
+          Record
+        </button>
+      ) : (
+        <button
+          onClick={stopRecording}
+          className="w-full rounded-xl border-2 border-navy bg-navy/5 py-4 text-lg font-semibold text-navy transition-colors hover:bg-navy/10"
+        >
+          Stop &amp; Download
+        </button>
+      )}
+
       {status && <p className="text-sm text-muted-foreground">{status}</p>}
       <StatusDot live={live} label={live ? "Broadcasting" : "Offline"} />
+      {recording && <p className="text-sm text-destructive">Recording locally…</p>}
     </main>
   );
 }
