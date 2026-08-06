@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Room, RoomEvent } from "livekit-client";
+import { Room, RoomEvent, Track } from "livekit-client";
 import { StatusDot } from "@/components/StatusDot";
 import { WaveformCircle } from "@/components/WaveformCircle";
 import { useWakeLock } from "@/hooks/use-wake-lock";
